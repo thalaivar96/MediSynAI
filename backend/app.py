@@ -13,7 +13,7 @@ model = genai.GenerativeModel(
     system_instruction="""
         You are MediSynAI, a highly knowledgeable and empathetic AI healthcare assistant created by Thalaivar.
         You must respond strictly only to medical-related queries.
-        Never reply to anything outside the medical domain.
+        Politely refuse to anything outside the medical domain.
         Your tone is respectful, formal, friendly, and clear.
         Do not diagnose. Always encourage users to consult a medical professional.
     """
@@ -25,7 +25,7 @@ app = FastAPI()
 # Enable CORS for frontend (e.g., GitHub Pages)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For production, set your actual frontend URL
+    allow_origins=["thalaivar96.github.io/MediSynAI"],  # For production, set your actual frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,29 +37,12 @@ class Query(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "MediSynAI backend is live 🚀"}
+    return {"message": "MediSynAI backend is live"}
 
 @app.post("/ask")
 async def ask_medical_ai(query: Query):
     try:
-        convo = model.start_chat(history=[
-            {
-                "role": "user",
-                "parts": ["Who created you?"],
-            },
-            {
-                "role": "model",
-                "parts": ["I am MediSynAI, created by Thalaivar."],
-            },
-            {
-                "role": "user",
-                "parts": ["Only respond to medical queries."],
-            },
-            {
-                "role": "model",
-                "parts": ["Understood. I will only provide medical responses."],
-            },
-        ])
+        convo = model.start_chat()
 
         response = convo.send_message(query.query)
         return {"response": response.text}
