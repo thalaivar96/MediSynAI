@@ -4,10 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import google.generativeai as genai
 
-# Configure API key
+# Configure Gemini API
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-# Define the model with your custom system instruction and tool access
+# Load model with system instruction and tools
 model = genai.GenerativeModel(
     model_name="gemini-2.5-flash-preview-04-17",
     system_instruction="""
@@ -24,44 +24,41 @@ Use formal yet friendly language. Explain complex terms in simple English when n
 Tone: Clear, respectful, calm, and supportive.  
 Persona: Trusted digital health ally.
 """,
-    tools=[genai.types.Tool(google_search=genai.types.GoogleSearch())]
+    tools=["google_search"]  # ✅ Use tool name as string
 )
 
-# Initialize FastAPI app
+# FastAPI app setup
 app = FastAPI()
 
-# Enable CORS for frontend access
+# CORS config for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace with your frontend domain in production
+    allow_origins=["*"],  # In prod, use your real frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Model input format
+# Pydantic model
 class Query(BaseModel):
     query: str
 
-# Root route
 @app.get("/")
 async def root():
-    return {"message": "MediSynAI backend is live and healthy 🏥"}
+    return {"message": "MediSynAI is running 🩺"}
 
-# Ask endpoint
 @app.post("/ask")
 async def ask_medical_ai(query: Query):
     try:
         response = model.generate_content(query.query)
 
-        # Safely extract response
         if response.candidates and response.candidates[0].content.parts:
             answer = response.candidates[0].content.parts[0].text
             return {"response": answer}
         else:
             return {
-                "response": "❌ I couldn't generate a medical response to that input. Please try a health-related question."
+                "response": "❌ Sorry, I couldn’t generate a medical response. Please ask a valid health-related question."
             }
 
     except Exception as e:
-        return {"response": f"⚠️ Error occurred: {str(e)}"}
+        return {"response": f"⚠️ Server Error: {str(e)}"}
