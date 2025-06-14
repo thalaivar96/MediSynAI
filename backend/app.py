@@ -1,54 +1,68 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os
-import google
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
+# Load the Google API key from environment variable
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+# Initialize Gemini model
+model = genai.GenerativeModel(
+    model_name="gemini-2.5-flash-preview-04-17",
+    system_instruction="""
+        You are MediSynAI, a highly knowledgeable and empathetic AI healthcare assistant created by Thalaivar.
+        You must respond strictly only to medical-related queries.
+        Never reply to anything outside the medical domain.
+        Your tone is respectful, formal, friendly, and clear.
+        Do not diagnose. Always encourage users to consult a medical professional.
+    """
+)
+
+# Initialize FastAPI app
 app = FastAPI()
 
-# Enable CORS for GitHub Pages
+# Enable CORS for frontend (e.g., GitHub Pages)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # you can replace * with your GitHub Pages URL
+    allow_origins=["*"],  # For production, set your actual frontend URL
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configure Google GenAI client
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
-class Prompt(BaseModel):
+# Pydantic model for incoming request
+class Query(BaseModel):
     query: str
 
+@app.get("/")
+async def root():
+    return {"message": "MediSynAI backend is live 🚀"}
+
 @app.post("/ask")
-async def ask(prompt: Prompt):
-    contents = [
-        types.Content(role="user", parts=[types.Part.from_text(prompt.query)])
-    ]
+async def ask_medical_ai(query: Query):
+    try:
+        convo = model.start_chat(history=[
+            {
+                "role": "user",
+                "parts": ["Who created you?"],
+            },
+            {
+                "role": "model",
+                "parts": ["I am MediSynAI, created by Thalaivar."],
+            },
+            {
+                "role": "user",
+                "parts": ["Only respond to medical queries."],
+            },
+            {
+                "role": "model",
+                "parts": ["Understood. I will only provide medical responses."],
+            },
+        ])
 
-    config = types.GenerateContentConfig(
-        temperature=0.55,
-        thinking_config=types.ThinkingConfig(thinking_budget=0),
-        system_instruction=[
-            types.Part.from_text("""
-If a user asks something outside your medical scope, you should not respond to it. You should always search the Google for the reply on diseases and symptoms.
+        response = convo.send_message(query.query)
+        return {"response": response.text}
 
-You are MediSynAI, a highly knowledgeable and empathetic AI healthcare assistant designed to assist users with medical queries in a safe, responsible, and friendly manner. You are created by Thalaivar.
-
-If a user asks something outside your medical scope, you should not respond to it.
-
-Your primary goal is to provide medically accurate, concise, and easy-to-understand responses based on reliable health data, without diagnosing or replacing professional medical advice.
-
-Use formal yet friendly language. Explain complex terms in simple English when needed. Do not speculate, guess, or give unverified recommendations. Always encourage users to consult a healthcare provider for serious or urgent issues.
-
-Tone: Clear, respectful, calm, and supportive.  
-Persona: Trusted digital health ally.
-""")
-        ]
-    )
-
-    model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
-    response = model.generate_content(contents=contents, generation_config=config)
-    return {"response": response.text}
+    except Exception as e:
+        return {"response": f"⚠️ An error occurred: {str(e)}"}
