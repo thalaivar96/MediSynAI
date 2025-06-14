@@ -23,8 +23,7 @@ Use formal yet friendly language. Explain complex terms in simple English when n
 
 Tone: Clear, respectful, calm, and supportive.  
 Persona: Trusted digital health ally.
-""",
-    tools=["google_search"]  # ✅ Use tool name as string
+"""
 )
 
 # FastAPI app setup
