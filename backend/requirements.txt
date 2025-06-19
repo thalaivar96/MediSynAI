@@ -1,5 +1,3 @@
-fastapi
-uvicorn
+Flask
 google-generativeai
-google
-pydantic
+firebase-admin
