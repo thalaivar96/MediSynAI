@@ -1,4 +1,5 @@
 Flask
+uvicorn
 google-generativeai
-firebase-admin
-gunicorn
+google
+pydantic
