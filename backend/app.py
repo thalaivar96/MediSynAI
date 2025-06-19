@@ -2,18 +2,17 @@
 
 import os
 from flask import Flask, request, jsonify # Import Flask components
-import google.generativeai as genai
+import google.generativeai as genai # Keep this import style, it works
 from google.generativeai import types
 import json
 import firebase_admin
 from firebase_admin import credentials, firestore
+from flask_cors import CORS # Import Flask-CORS
 
 app = Flask(__name__)
+CORS(app) # Enable CORS for your Flask app to allow frontend requests
 
 # --- Firebase Initialization ---
-# You'll store your Firebase service account key in Render environment variables
-# For local testing, you might load it from a file, but for Render, use env var.
-# Example: export FIREBASE_SERVICE_ACCOUNT_KEY='{"type": "service_account", ...}'
 firebase_credentials_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY")
 if not firebase_credentials_json:
     raise ValueError("FIREBASE_SERVICE_ACCOUNT_KEY environment variable not set.")
@@ -22,7 +21,10 @@ try:
     # Parse the JSON string into a dictionary
     cred_dict = json.loads(firebase_credentials_json)
     cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred)
+    
+    # Check if a Firebase app is already initialized to prevent re-initialization errors
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
     db = firestore.client()
     print("Firebase initialized successfully!")
 except Exception as e:
@@ -30,17 +32,23 @@ except Exception as e:
     # You might want to raise an exception or handle this more gracefully
     # if Firebase is critical for your app.
 
-# --- Gemini Client Initialization ---
+# --- Gemini Client Configuration (UPDATED) ---
 gemini_api_key = os.getenv("GOOGLE_API_KEY") # Use GOOGLE_API_KEY for Render
 if not gemini_api_key:
     raise ValueError("GOOGLE_API_KEY environment variable not set.")
-client = genai.Client(api_key=gemini_api_key)
+
+# *** KEY CHANGE: Configure genai directly, no 'Client' object ***
+genai.configure(api_key=gemini_api_key)
 
 
-# --- Helper functions for Gemini interactions (similar to your existing code) ---
+# --- Helper functions for Gemini interactions (UPDATED) ---
 
 def predict_medical_data(symptom_text, history_contents):
-    model = "gemini-2.5-flash-preview-04-17"
+    model_name = "gemini-2.5-flash-preview-04-17" # Renamed 'model' to 'model_name' for clarity
+    
+    # *** KEY CHANGE: Get the GenerativeModel instance directly ***
+    model_obj = genai.GenerativeModel(model_name)
+
     contents = list(history_contents) # Start with provided history
     contents.append(types.Content(role="user", parts=[types.Part.from_text(text=symptom_text)]))
 
@@ -86,10 +94,11 @@ Output only the JSON format without explanation. Confidence should be a number (
 
     response_json = ""
     try:
-        for chunk in client.models.generate_content_stream(
-            model=model,
+        # *** KEY CHANGE: Call generate_content_stream on the model_obj ***
+        # *** Also: 'config' parameter is now 'generation_config' ***
+        for chunk in model_obj.generate_content_stream(
             contents=contents,
-            config=generate_content_config,
+            generation_config=generate_content_config,
         ):
             response_json += chunk.text
     except Exception as e:
@@ -99,7 +108,11 @@ Output only the JSON format without explanation. Confidence should be a number (
     return response_json.strip()
 
 def explain_medical_output(user_input, prediction_json_str, history_contents):
-    model = "gemini-2.5-flash-preview-04-17"
+    model_name = "gemini-2.5-flash-preview-04-17" # Renamed 'model' to 'model_name' for clarity
+    
+    # *** KEY CHANGE: Get the GenerativeModel instance directly ***
+    model_obj = genai.GenerativeModel(model_name)
+
     contents = list(history_contents)
     
     combined_prompt = f"""
@@ -138,10 +151,11 @@ Instructions:
 
     full_explanation = ""
     try:
-        for chunk in client.models.generate_content_stream(
-            model=model,
+        # *** KEY CHANGE: Call generate_content_stream on the model_obj ***
+        # *** Also: 'config' parameter is now 'generation_config' ***
+        for chunk in model_obj.generate_content_stream(
             contents=contents,
-            config=generate_content_config,
+            generation_config=generate_content_config,
         ):
             full_explanation += chunk.text
     except Exception as e:
