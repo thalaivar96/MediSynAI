@@ -2,8 +2,8 @@
 
 import os
 from flask import Flask, request, jsonify # Import Flask components
-from google import genai
-from google.genai import types
+import google.generativeai as genai
+from genai import types
 import json
 import firebase_admin
 from firebase_admin import credentials, firestore
