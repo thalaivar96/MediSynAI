@@ -1,4 +1,5 @@
 Flask
+Flask-CORS
 uvicorn
 google-generativeai
 google
