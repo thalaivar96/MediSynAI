@@ -1,4 +1,4 @@
-# app.py (Main Python file for Render deployment)
+# app.py
 
 import os
 import json
@@ -7,16 +7,10 @@ from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials, firestore
 import google.generativeai as genai
-from google.generativeai.types import (
-    Content,
-    Part,
-    GenerateContentConfig,
-    ThinkingConfig
-)
 
-# --- Flask App Initialization ---
+# --- Flask App Setup ---
 app = Flask(__name__)
-CORS(app, resources={r"/chat": {"origins": "*"}})  # Customize origin for more security
+CORS(app, resources={r"/chat": {"origins": "*"}})
 
 # --- Firebase Initialization ---
 firebase_credentials_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY")
@@ -29,27 +23,30 @@ try:
     if not firebase_admin._apps:
         firebase_admin.initialize_app(cred)
     db = firestore.client()
-    print("Firebase initialized successfully!")
+    print("✅ Firebase initialized.")
 except Exception as e:
-    print(f"Error initializing Firebase: {e}")
+    print(f"🔥 Firebase error: {e}")
     raise
 
-# --- Gemini API Initialization ---
+# --- Gemini Initialization ---
 gemini_api_key = os.getenv("GOOGLE_API_KEY")
 if not gemini_api_key:
     raise ValueError("GOOGLE_API_KEY environment variable not set.")
+
 genai.configure(api_key=gemini_api_key)
 
-
-# --- Function: Predict using Gemini ---
+# --- Medical Prediction Function ---
 def predict_medical_data(symptom_text, history_contents):
     model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
 
     contents = list(history_contents)
-    contents.append(Content(role="user", parts=[Part(text=symptom_text)]))
+    contents.append(genai.types.Content(
+        role="user",
+        parts=[genai.types.Part(text=symptom_text)]
+    ))
 
-    generate_content_config = GenerateContentConfig(
-        thinking_config=ThinkingConfig(thinking_budget=0),
+    generation_config = genai.types.GenerateContentConfig(
+        thinking_config=genai.types.ThinkingConfig(thinking_budget=0),
         response_mime_type="application/json",
         response_schema={
             "type": "object",
@@ -76,46 +73,52 @@ def predict_medical_data(symptom_text, history_contents):
                 }
             }
         },
-        system_instruction=[Part(text="""
+        system_instruction=[
+            genai.types.Part(text="""
 You are AltheaAI, a medically-trained assistant. Based on the user's symptom input and the conversation history, return structured JSON with:
 - conditions (name + confidence)
 - treatments (basic suggestions)
 - red_flags (warnings to seek medical help)
 
 Output only the JSON format without explanation. Confidence should be a number (e.g., 75 for 75%).
-""")]
+""")
+        ]
     )
 
     try:
         response_json = ""
         for chunk in model.generate_content_stream(
             contents=contents,
-            generation_config=generate_content_config
+            generation_config=generation_config
         ):
             response_json += chunk.text
         return response_json.strip()
     except Exception as e:
-        print(f"Error during Gemini prediction: {e}")
+        print(f"⚠️ Gemini prediction error: {e}")
         return json.dumps({"error": str(e), "message": "Failed to get medical prediction."})
 
 
-# --- Function: Explain the Medical Output ---
+# --- Explanation Generator ---
 def explain_medical_output(user_input, prediction_json_str, history_contents):
     model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
 
     contents = list(history_contents)
-    contents.append(Content(role="user", parts=[Part(text=f"""
+    contents.append(genai.types.Content(
+        role="user",
+        parts=[genai.types.Part(text=f"""
 User Prompt:
 {user_input}
 
 Health-Model's Prediction:
 {prediction_json_str}
-""")]))
+""")]
+    ))
 
-    generate_content_config = GenerateContentConfig(
-        thinking_config=ThinkingConfig(thinking_budget=0),
+    generation_config = genai.types.GenerateContentConfig(
+        thinking_config=genai.types.ThinkingConfig(thinking_budget=0),
         response_mime_type="text/plain",
-        system_instruction=[Part(text="""
+        system_instruction=[
+            genai.types.Part(text="""
 You are AltheaAI, designed to explain medical diagnoses in a friendly, easy-to-understand way.
 First check the Prompt given by the User, then relate it with the prediction made by Health-Model.
 If the prediction made by Health-Model is empty or irrelevant to the user's current query, reply to the User's prompt on your Own, offering general helpful information.
@@ -132,23 +135,24 @@ Instructions:
 5. Avoid JSON or technical terms.
 6. Use kind, conversational, reassuring language.
 7. Maintain continuity with the previous conversation (if any) based on the provided chat history.
-""")]
+""")
+        ]
     )
 
     try:
         full_explanation = ""
         for chunk in model.generate_content_stream(
             contents=contents,
-            generation_config=generate_content_config
+            generation_config=generation_config
         ):
             full_explanation += chunk.text
         return full_explanation
     except Exception as e:
-        print(f"Error during Gemini explanation: {e}")
+        print(f"⚠️ Gemini explanation error: {e}")
         return f"I'm sorry, I encountered an error while explaining. Please try again. ({e})"
 
 
-# --- API Endpoint ---
+# --- Flask Route for Chat ---
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
@@ -167,20 +171,25 @@ def chat():
     if doc.exists:
         firebase_history_data = doc.to_dict().get('history', [])
         for item in firebase_history_data:
-            if 'role' in item and 'parts' in item:
-                parts = [Part(text=part['text']) for part in item['parts'] if 'text' in part]
-                if parts:
-                    gemini_chat_history_contents.append(Content(role=item['role'], parts=parts))
+            parts = [genai.types.Part(text=part['text']) for part in item['parts'] if 'text' in part]
+            if parts:
+                gemini_chat_history_contents.append(
+                    genai.types.Content(role=item['role'], parts=parts)
+                )
 
     prediction_json_str = predict_medical_data(user_message, gemini_chat_history_contents)
 
     try:
         parsed_prediction = json.loads(prediction_json_str)
     except json.JSONDecodeError:
-        print(f"Warning: Could not parse prediction JSON: {prediction_json_str}")
+        print(f"Warning: Couldn't parse prediction: {prediction_json_str}")
         parsed_prediction = {"conditions": [], "treatments": [], "red_flags": []}
 
-    althea_response_text = explain_medical_output(user_message, json.dumps(parsed_prediction, indent=2), gemini_chat_history_contents)
+    althea_response_text = explain_medical_output(
+        user_message,
+        json.dumps(parsed_prediction, indent=2),
+        gemini_chat_history_contents
+    )
 
     firebase_history_data.append({"role": "user", "parts": [{"text": user_message}]})
     firebase_history_data.append({"role": "model", "parts": [{"text": althea_response_text}]})
@@ -192,13 +201,13 @@ def chat():
     })
 
 
-# --- Optional Health Check Endpoint for Render ---
+# --- Optional Health Route ---
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({"status": "ok"})
 
 
-# --- Start Flask App ---
+# --- Run App ---
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port, debug=True)
