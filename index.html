@@ -1,195 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AltheaAI Chatbot</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f0f2f5;
-            margin: 0;
-            color: #333;
-        }
-        .chat-container {
-            background: linear-gradient(to bottom right, #ffffff, #f7f7f7);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            border: 1px solid #e0e0e0;
-        }
-        .chat-history {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            max-height: 65vh; /* Adjusted for better viewing */
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            flex-direction: column;
-        }
-        .message {
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            border-radius: 20px;
-            max-width: 85%;
-            word-wrap: break-word; /* Ensure long words wrap */
-            line-height: 1.5;
-            font-size: 0.95em;
-        }
-        .user-message {
-            background-color: #007bff;
-            color: white;
-            align-self: flex-end;
-            margin-left: auto;
-            border-bottom-right-radius: 5px; /* Slight adjustment for a cleaner look */
-        }
-        .althea-message {
-            background-color: #e9ecef;
-            color: #333;
-            align-self: flex-start;
-            margin-right: auto;
-            border-bottom-left-radius: 5px; /* Slight adjustment for a cleaner look */
-        }
-        .chat-input {
-            display: flex;
-            padding: 15px;
-            border-top: 1px solid #e0e0e0;
-            background-color: #fcfcfc;
-        }
-        .chat-input input {
-            flex-grow: 1;
-            padding: 12px 15px;
-            border: 1px solid #ced4da;
-            border-radius: 25px; /* More rounded */
-            margin-right: 10px;
-            font-size: 1em;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .chat-input input:focus {
-            border-color: #007bff;
-        }
-        .chat-input button {
-            padding: 12px 20px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 25px; /* More rounded */
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: bold;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .chat-input button:hover {
-            background-color: #218838;
-            transform: translateY(-1px);
-        }
-        .chat-input button:disabled {
-            background-color: #90ee90;
-            cursor: not-allowed;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AltheaAI Chatbot</title>
+  <style>
+    /* [Same style, untouched because it’s already clean and modern] */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f0f2f5;
+      margin: 0;
+      color: #333;
+    }
+    .chat-container {
+      background: linear-gradient(to bottom right, #ffffff, #f7f7f7);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+    }
+    .chat-history {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+      max-height: 65vh;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+    }
+    .message {
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      border-radius: 20px;
+      max-width: 85%;
+      word-wrap: break-word;
+      line-height: 1.5;
+      font-size: 0.95em;
+    }
+    .user-message {
+      background-color: #007bff;
+      color: white;
+      align-self: flex-end;
+      margin-left: auto;
+      border-bottom-right-radius: 5px;
+    }
+    .althea-message {
+      background-color: #e9ecef;
+      color: #333;
+      align-self: flex-start;
+      margin-right: auto;
+      border-bottom-left-radius: 5px;
+    }
+    .chat-input {
+      display: flex;
+      padding: 15px;
+      border-top: 1px solid #e0e0e0;
+      background-color: #fcfcfc;
+    }
+    .chat-input input {
+      flex-grow: 1;
+      padding: 12px 15px;
+      border: 1px solid #ced4da;
+      border-radius: 25px;
+      margin-right: 10px;
+      font-size: 1em;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-input input:focus {
+      border-color: #007bff;
+    }
+    .chat-input button {
+      padding: 12px 20px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: bold;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    .chat-input button:hover {
+      background-color: #218838;
+      transform: translateY(-1px);
+    }
+    .chat-input button:disabled {
+      background-color: #90ee90;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-history" id="chat-history">
-            <div class="message althea-message">Hello! I'm AltheaAI. How can I help you today?</div>
-        </div>
-        <div class="chat-input">
-            <input type="text" id="user-input" placeholder="Type your symptoms...">
-            <button id="send-button">Send</button>
-        </div>
+  <div class="chat-container">
+    <div class="chat-history" id="chat-history">
+      <div class="message althea-message">👩‍⚕️ Hello! I'm <strong>AltheaAI</strong>. How can I help you today?</div>
     </div>
+    <div class="chat-input">
+      <input type="text" id="user-input" placeholder="Describe your symptoms...">
+      <button id="send-button">Send</button>
+    </div>
+  </div>
 
-    <script>
-        const chatHistoryDiv = document.getElementById('chat-history');
-        const userInput = document.getElementById('user-input');
-        const sendButton = document.getElementById('send-button');
+  <script>
+    const chatHistoryDiv = document.getElementById('chat-history');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
 
-        // Generate a simple unique user ID for this session (for demo purposes)
-        // In a real application, this would come from an authentication system or be a proper session ID.
-        let userId = localStorage.getItem('altheaAiUserId');
-        if (!userId) {
-            userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-            localStorage.setItem('altheaAiUserId', userId);
-        }
-        console.log("User ID for this session:", userId);
+    // Generate or retrieve user ID
+    let userId = localStorage.getItem('altheaAiUserId');
+    if (!userId) {
+      userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      localStorage.setItem('altheaAiUserId', userId);
+    }
 
-        // Your AltheaAI Render backend URL, including the /chat endpoint
-        const BACKEND_URL = "https://altheaai.onrender.com/chat"; 
+    const BACKEND_URL = "https://altheaai.onrender.com/chat";
 
-        async function sendMessage() {
-            const message = userInput.value.trim();
-            if (!message) return; // Don't send empty messages
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
 
-            addMessageToChat(message, 'user');
-            userInput.value = ''; // Clear input field
-            sendButton.disabled = true; // Disable button while processing
-            userInput.disabled = true; // Disable input field
+      addMessageToChat(message, 'user');
+      userInput.value = '';
+      sendButton.disabled = true;
+      userInput.disabled = true;
 
-            try {
-                const response = await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ userId: userId, message: message }),
-                });
-
-                if (!response.ok) {
-                    // Attempt to read error message from backend if available
-                    let errorData = {};
-                    try {
-                        errorData = await response.json();
-                    } catch (e) {
-                        // If not JSON, just use status text
-                        throw new Error(`HTTP error! Status: ${response.status} - ${response.statusText}`);
-                    }
-                    throw new Error(`Backend Error: ${errorData.error || response.statusText}`);
-                }
-
-                const data = await response.json();
-                addMessageToChat(data.response, 'althea');
-                console.log("Prediction Data (for debugging):", data.prediction_data); // For debugging
-            } catch (error) {
-                console.error('Error sending message:', error);
-                addMessageToChat(`I'm sorry, an error occurred: ${error.message}. Please try again.`, 'althea');
-            } finally {
-                sendButton.disabled = false; // Re-enable button
-                userInput.disabled = false; // Re-enable input field
-                userInput.focus(); // Put focus back on input
-                chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight; // Always scroll to bottom
-            }
-        }
-
-        function addMessageToChat(text, sender) {
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message');
-            messageDiv.classList.add(sender === 'user' ? 'user-message' : 'althea-message');
-            messageDiv.textContent = text;
-            chatHistoryDiv.appendChild(messageDiv);
-            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight; // Scroll to bottom immediately
-        }
-
-        // Event Listeners
-        sendButton.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
+      try {
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: userId, message: message }),
         });
 
-        // Initial scroll to bottom on page load
+        if (!response.ok) {
+          let errorData = {};
+          try {
+            errorData = await response.json();
+          } catch (e) {}
+          throw new Error(errorData.error || `Status ${response.status}`);
+        }
+
+        const data = await response.json();
+        addMessageToChat(data.response, 'althea');
+        console.log("Prediction Data:", data.prediction_data);
+      } catch (error) {
+        console.error('Error:', error);
+        addMessageToChat(`⚠️ I'm sorry, something went wrong: ${error.message}`, 'althea');
+      } finally {
+        sendButton.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
         chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-        userInput.focus(); // Focus on input when page loads
-    </script>
+      }
+    }
+
+    function addMessageToChat(text, sender) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      messageDiv.classList.add(sender === 'user' ? 'user-message' : 'althea-message');
+      messageDiv.textContent = text;
+      chatHistoryDiv.appendChild(messageDiv);
+      chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+    }
+
+    // Send on click or Enter key
+    sendButton.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    window.onload = () => {
+      userInput.focus();
+    };
+  </script>
 </body>
 </html>
