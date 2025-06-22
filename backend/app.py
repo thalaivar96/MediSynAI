@@ -1,4 +1,4 @@
-# app.py (This would be your main Python file for Render)
+# app.py 
 
 import os
 from flask import Flask, request, jsonify # Import Flask components
